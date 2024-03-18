@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_COCOA
@@ -35,40 +36,42 @@ int main() {
     id commandQueue = [device newCommandQueue];
     ImGui_ImplMetal_CreateFontsTexture(device);
     while (!glfwWindowShouldClose(W)) {
-        ImGuiIO& io = ImGui::GetIO();
-        io.DisplaySize = ImVec2(width, height);
-        ImGui_ImplOSX_NewFrame(NSW.contentView);
-        ImGui::NewFrame();
-        
-        // User code
-        ImGui::ShowDemoWindow();
-        
-        id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
-        MTLRenderPassDescriptor* renderPassDescriptor = [[MTLRenderPassDescriptor alloc] init];
-        MTLRenderPassColorAttachmentDescriptor* caDesc = [[MTLRenderPassColorAttachmentDescriptor alloc] init];
-        id<CAMetalDrawable> drawable = layer.nextDrawable;
-        caDesc.texture = drawable.texture;
-        caDesc.loadAction = MTLLoadActionClear;
-        caDesc.storeAction = MTLStoreActionStore;
-        [renderPassDescriptor.colorAttachments setObject: caDesc
-                                      atIndexedSubscript: 0];
-        ImGui_ImplMetal_NewFrame(renderPassDescriptor);
-        
-        // Rendering
-        ImGui::Render();
-        ImDrawData* drawData = ImGui::GetDrawData();
-        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(1, 0, 1, 1);
-        id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
-        [renderEncoder pushDebugGroup:@"Dear ImGui rendering"];
-        ImGui_ImplMetal_RenderDrawData(drawData, commandBuffer, renderEncoder);
-        [renderEncoder popDebugGroup];
-        [renderEncoder endEncoding];
-        // Present
-        [commandBuffer presentDrawable: drawable];
-        [commandBuffer commit];
-        [drawable present];
-        
-        glfwPollEvents();
+        @autoreleasepool {
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(width, height);
+            ImGui_ImplOSX_NewFrame(NSW.contentView);
+            ImGui::NewFrame();
+            
+            // User code
+            ImGui::ShowDemoWindow();
+            
+            id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
+            MTLRenderPassDescriptor* renderPassDescriptor = [[MTLRenderPassDescriptor alloc] init];
+            MTLRenderPassColorAttachmentDescriptor* caDesc = [[MTLRenderPassColorAttachmentDescriptor alloc] init];
+            id<CAMetalDrawable> drawable = layer.nextDrawable;
+            caDesc.texture = drawable.texture;
+            caDesc.loadAction = MTLLoadActionClear;
+            caDesc.storeAction = MTLStoreActionStore;
+            [renderPassDescriptor.colorAttachments setObject: caDesc
+                                          atIndexedSubscript: 0];
+            ImGui_ImplMetal_NewFrame(renderPassDescriptor);
+            
+            // Rendering
+            ImGui::Render();
+            ImDrawData* drawData = ImGui::GetDrawData();
+            renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(1, 0, 1, 1);
+            id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+            [renderEncoder pushDebugGroup:@"Dear ImGui rendering"];
+            ImGui_ImplMetal_RenderDrawData(drawData, commandBuffer, renderEncoder);
+            [renderEncoder popDebugGroup];
+            [renderEncoder endEncoding];
+            // Present
+            [commandBuffer presentDrawable: drawable];
+            [commandBuffer commit];
+            [drawable present];
+            
+            glfwPollEvents();
+        }
     }
     ImGui_ImplMetal_Shutdown();
     ImGui_ImplOSX_Shutdown();
